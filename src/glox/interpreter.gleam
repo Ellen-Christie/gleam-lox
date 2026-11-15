@@ -1,8 +1,8 @@
-import gleam/io
 import gleam/bool
 import gleam/dict
 import gleam/float
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
@@ -74,7 +74,11 @@ fn environment_set(
 }
 
 type InterpreterState {
-  InterpreterState(environment: Environment, errors: List(EvalError), print_list: List(String))
+  InterpreterState(
+    environment: Environment,
+    errors: List(EvalError),
+    print_list: List(String),
+  )
 }
 
 pub type ExprReturnType {
@@ -187,11 +191,20 @@ fn record_errors(
   state.bind(state.modify(record_errors_internal(_, errors)), fn(_) { then() })
 }
 
-fn lox_print_internal(interpreter_state: InterpreterState, to_print: String) -> InterpreterState {
-  InterpreterState(..interpreter_state, print_list: list.append(interpreter_state.print_list, [to_print]))
+fn lox_print_internal(
+  interpreter_state: InterpreterState,
+  to_print: String,
+) -> InterpreterState {
+  InterpreterState(
+    ..interpreter_state,
+    print_list: list.append(interpreter_state.print_list, [to_print]),
+  )
 }
 
-fn lox_print(print to_print: String, then then: fn() -> Evaluator(a)) -> Evaluator(a) {
+fn lox_print(
+  print to_print: String,
+  then then: fn() -> Evaluator(a),
+) -> Evaluator(a) {
   state.bind(state.modify(lox_print_internal(_, to_print)), fn(_) { then() })
 }
 
@@ -487,6 +500,14 @@ fn eval_statement(statement: ast.Declaration) -> Evaluator(Nil) {
         }
       }
     }
+    ast.Block(statement_list) -> { 
+      use _ <- state.bind(state.modify(fn(state) { InterpreterState(..state, environment: Environment(dict.new(), Ok(state.environment))) }))
+      use _ <- state.bind(state.for_each(run: eval_statement, over: statement_list))
+      use _ <- state.bind(state.modify(fn(state) { 
+        let assert InterpreterState(environment: Environment(enclosing_scope:Ok(outer_scope), ..), ..) = state
+        InterpreterState(..state, environment: outer_scope) }))
+      state.return(Nil)
+      }
   }
 }
 
@@ -494,14 +515,20 @@ fn eval_program(program: ast.Program) -> Evaluator(Nil) {
   state.for_each(run: eval_statement, over: program)
 }
 
-pub fn interpret(program: ast.Program) -> Result(List(String), List(EvalError)) {
+pub fn interpret(
+  program: ast.Program,
+) -> Result(List(String), List(EvalError)) {
   let initial_state =
     InterpreterState(
-      environment: Environment(current_scope: dict.new(), enclosing_scope: Error(Nil)),
+      environment: Environment(
+        current_scope: dict.new(),
+        enclosing_scope: Error(Nil),
+      ),
       errors: [],
-      print_list: []
+      print_list: [],
     )
-  let InterpreterState(errors:, print_list:, ..) = state.exec_state(eval_program(program), initial_state)
+  let InterpreterState(errors:, print_list:, ..) =
+    state.exec_state(eval_program(program), initial_state)
   case errors {
     [] -> Ok(print_list)
     errors -> Error(errors)

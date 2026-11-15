@@ -69,6 +69,7 @@ pub type Declaration {
   VariableDeclaration(name: Identifier, initializer: Expr)
   ExpressionStatement(expression: Expr)
   PrintStatement(expression: Expr)
+  Block(statement_list: List(Declaration))
 }
 
 pub type Program = List(Declaration)

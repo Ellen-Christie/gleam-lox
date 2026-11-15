@@ -75,3 +75,16 @@ pub fn reassign_variable_to_expression_including_itself_test() -> Nil {
 pub fn reassigning_variables_within_nested_expressions_test() -> Nil {
   prints("var x = 2; print (x=8)+(x=(x+2));", "18.0")
 }
+
+pub fn blocks_run_code_test() -> Nil {
+  prints("{print \"in a block\"; }", "in a block") 
+}
+
+pub fn blocks_run_multiple_statements_test() -> Nil {
+  prints_these("print \"out\"; {print \"in a block\"; } print \"out again\";", ["out", "in a block", "out again"]) 
+}
+
+pub fn blocks_have_scope_test() -> Nil {
+  prints_these("var x = 1; {print x; x = 2; print x; var x = 3; print x;} print x;", ["1.0", "2.0", "3.0", "2.0"])
+}
+

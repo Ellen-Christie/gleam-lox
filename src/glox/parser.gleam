@@ -238,8 +238,17 @@ fn parse_expression_statement() -> pc.Parser(ast.Declaration) {
   pc.return(ast.ExpressionStatement(expression))
 }
 
+fn parse_block() -> pc.Parser(ast.Declaration) {
+  use _ <- pc.sequence(character_without_trailing_whitespace("{"))
+  use statements <- pc.sequence(pc.many(parse_declaration()))
+  use _ <- pc.sequence(character_without_trailing_whitespace("}"))
+  pc.return(ast.Block(statements))
+
+
+}
+
 fn parse_statement() -> pc.Parser(ast.Declaration) {
-  pc.choice(parse_print_statement(), parse_expression_statement())
+  pc.choice_list([parse_print_statement(), parse_expression_statement(), parse_block()])
 }
 
 fn parse_variable_declaration() -> pc.Parser(ast.Declaration) {
